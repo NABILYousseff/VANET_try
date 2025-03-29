@@ -78,12 +78,15 @@ def aes_decrypt(key, ciphertext):
 
 
 def start_server(role, port, handler):
+    server_private_key, server_public_key = generate_ecc_keys()
+    server_public_bytes = serialize_key(server_public_key)
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.bind(('localhost', port))
     server.listen(5)
     print(f"{role} server listening on port {port}")
     while True:
         client, _ = server.accept()
+        client.sendall(server_public_bytes.encode())
         threading.Thread(target=handler, args=(client,)).start()
 
 # RA Handler
