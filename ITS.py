@@ -18,6 +18,7 @@ from ecdsa import NIST256p, numbertheory
 from ecdsa.ellipticcurve import Point
 import hashlib
 import random
+from pathlib import Path
 
 
 class Address:
@@ -112,6 +113,9 @@ class Entity:
             info=b''
         ).derive(shared_key)
         return derived_key
+
+    def get_Private_value(self):
+        return self.__Private_Key.private_numbers().private_value
 
     def derive_aes_key_from_data(self, public_key):
         peer_pubkey = serialization.load_pem_public_key(public_key)
@@ -227,12 +231,14 @@ class Registration_Authority (Entity):
                         LA2_cipher = quadruple[3]
                         vehicule_pubkey = quadruple[1]
                         message1 = {
+                            "id": ID,
                             "Vehicule_pubkey": vehicule_pubkey,
-                            "LA1_cipher": LA1_cipher
+                            "LA_cipher": LA1_cipher
                         }
                         message2 = {
+                            "id": ID,
                             "Vehicule_pubkey": vehicule_pubkey,
-                            "LA2_cipher": LA2_cipher
+                            "LA_cipher": LA2_cipher
                         }
                         message2_json = json.dumps(message2)
                         print("Message to LA2 : ", message2_json, "\n")
@@ -314,27 +320,24 @@ class Link_Authority (Entity):
         self.connected_vehicule += 1
         self.connected_Entities["VEH_"+str(self.connected_vehicule)] = VEH
 
-    def chameleon_hash_and_PLV(self, m, r):
-        s_k = self.__Private_Key.private_numbers().private_value
-        curve = NIST256p.curve
-        order = NIST256p.order
-        generator = NIST256p.generator
+    def chameleon_hash_and_PLV(self, m, r, p, g):
+        s_k = self.get_Private_value()
 
-        term = (m + r * s_k) % order
-        PLV = (m + r) % order
-        result = generator * term
+        term = (m + r * s_k) % p
+        PLV = (m + r) % p
+        result = g * term
 
         hash_result = hashlib.sha256(
             result.x().to_bytes(32, 'big')).hexdigest()
         return hash_result, PLV
 
-    def save_hash_to_json(self, m, r, filename, hash_value, PLV):
+    def save_hash_to_json(self, m, r, filename, PLV):
         identifier = f"{m}_{r}"
         data = {
             "msg_random": identifier,
             "message": m,
             "random": r,
-            "hash": hash_value,
+            # "hash": hash_value,
             "Prelinkage Value": PLV
         }
         try:
@@ -347,24 +350,59 @@ class Link_Authority (Entity):
         with open(filename, 'w') as f:
             json.dump(all_data, f, indent=4)
 
-    def find_collision(self, m1, r1, m2):
-        s_k = self.__Private_Key.private_numbers().private_value
+    def find_collision(self, m1, r1, m2, p, g):
+        s_k = self.get_Private_value()
 
-        curve = NIST256p.curve
-        order = NIST256p.order
-        generator = NIST256p.generator
+        delta_m = (m1 - m2) % p
 
-        delta_m = (m1 - m2) % order
-
-        sk_inv = numbertheory.inverse_mod(s_k, order)
-        r2 = (r1 + delta_m * sk_inv) % order
+        sk_inv = numbertheory.inverse_mod(s_k, p)
+        r2 = (r1 + delta_m * sk_inv) % p
         return r2
 
     def packet_forwarding(self, packet: mini_packet):
         source_entity = self.get_msg_Entity_source(packet.address)
         print('LA had received message from ', source_entity)
         if source_entity == "RA":
-            self.send(self.connected_Entities['RA'], packet.data)
+            data = packet.data.decode()
+            json_data = json.loads(data)
+            veh_pub = base64.b64decode(json_data["Vehicule_pubkey"])
+            veh_id = int.from_bytes(base64.b64decode(json_data["id"]), 'big')
+            aes_key = self.derive_aes_key_from_data(
+                veh_pub)
+            LA_cipher = base64.b64decode(json_data["LA_cipher"])
+            LA_cert = self.aes_decrypt(aes_key, LA_cipher)
+
+            filename = str(veh_id) + LA_cert.decode() + ".json"
+            file_path = Path(filename)
+            if LA_cert == b"LA_CERT_1" or LA_cert == b"LA_CERT_2":
+                curve = NIST256p.curve
+                p = NIST256p.order
+                g = NIST256p.generator
+
+                m1, r1 = int.from_bytes(os.urandom(32), 'big') % p, int.from_bytes(
+                    os.urandom(32), 'big') % p
+                H, PLV = self.chameleon_hash_and_PLV(m1, r1, p, g)
+                hash_to_file = {"Hc": H}
+                if file_path.exists() == False:
+                    with open(filename, "w") as f:
+                        json.dump(hash_to_file, f)
+                else:
+                    m2 = int.from_bytes(os.urandom(32), 'big') % p
+                    r2 = self.find_collision(m1, m2, r1, p, g)
+                    with open(filename, "r") as f:
+                        veh_data = json.load(f)
+                        assert veh_data["Hc"] == self.chameleon_hash_and_PLV(
+                            m2, r2, p, g)[0]
+                        r1 = r2
+                self.save_hash_to_json(m1, r1, filename, PLV)
+                message = {
+                    "id": veh_id,
+                    "PLV": str(PLV)
+                }
+                message_json = json.dumps(message)
+                self.send(self.connected_Entities['RA'], message_json)
+            else:
+                print("Invalid LA cert")
         else:  # The source of the packet is not known
             pass
 
