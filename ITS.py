@@ -378,10 +378,18 @@ class Link_Authority (Entity):
                 curve = NIST256p.curve
                 p = NIST256p.order
                 g = NIST256p.generator
+                aes_PC_LA_key = self.derive_aes_key(
+                    self.connected_Entities["PCA"])
+                aes_RA_LA_key = self.derive_aes_key(
+                    self.connected_Entities["RA"])
 
                 m1, r1 = int.from_bytes(os.urandom(32), 'big') % p, int.from_bytes(
                     os.urandom(32), 'big') % p
                 H, PLV = self.chameleon_hash_and_PLV(m1, r1, p, g)
+                encrypted_PLV_for_PCA = self.aes_encrypt(
+                    aes_PC_LA_key, PLV.to_bytes(PLV.bit_length(), 'big'))
+                encrypt_for_RA = self.aes_encrypt(
+                    aes_RA_LA_key, encrypted_PLV_for_PCA)
                 hash_to_file = {"Hc": H}
                 if file_path.exists() == False:
                     with open(filename, "w") as f:
@@ -397,9 +405,11 @@ class Link_Authority (Entity):
                 self.save_hash_to_json(m1, r1, filename, PLV)
                 message = {
                     "id": veh_id,
-                    "PLV": str(PLV)
+                    "PLV": base64.b64encode(encrypt_for_RA).decode()
                 }
                 message_json = json.dumps(message)
+
+                print(message_json)
                 self.send(self.connected_Entities['RA'], message_json)
             else:
                 print("Invalid LA cert")
