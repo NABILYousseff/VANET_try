@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from abc import abstractmethod
 from base64 import b64encode, encode
 import threading
@@ -184,7 +186,7 @@ class Registration_Authority (Entity):
     def __init__(self, sending_address, listening_address):
         super().__init__(sending_address, listening_address)
         self.connected_vehicule = 0
-        self.linkage_cert = []  # it will be used to verify that both LC1 and LC2 are created
+        self.PLVs = {}
         self.RA_buffer = []
         self.pubkeys_house = {}
 
@@ -211,9 +213,34 @@ class Registration_Authority (Entity):
         if source_entity == None:
             pass  # The source of the packet is not known
         elif source_entity == "LA1":
-            pass  # implement a fonction waiting LA2 then sending both lc to PCA
+            data = packet.data.decode()
+            json_data = json.loads(data)
+            PLV = base64.b64decode(json_data["PLV"])
+            aes_key = self.derive_aes_key(self.connected_Entities["LA1"])
+            decrypt_PLV = self.aes_decrypt(aes_key, PLV)
+            self.PLVs["PLV1"] = decrypt_PLV
+
         elif source_entity == "LA2":
-            pass  # implement a fonction waiting LA1 then sending both lc to PCA
+            data = packet.data.decode()
+            json_data = json.loads(data)
+            PLV = base64.b64decode(json_data["PLV"])
+            aes_key = self.derive_aes_key(self.connected_Entities["LA1"])
+            decrypt_PLV = self.aes_decrypt(aes_key, PLV)
+            self.PLVs["PLV2"] = decrypt_PLV
+            if "PLV1" in self.PLVs.keys():
+
+                message = {
+                    "id": json_data["id"],
+                    "PLV1": base64.b64encode(self.PLVs["PLV1"]).decode(),
+                    "PLV2": base64.b64encode(self.PLVs["PLV1"]).decode()
+                }
+                message_json = json.dumps(message)
+                self.send(
+                    self.connected_Entities["PCA"], message_json.encode())
+                print(message_json)
+            else:
+                pass
+
         elif source_entity == "LTCA":
             print('Sending Linkage certif to LA1 and LA2..')
             # verfying if response is true or false
@@ -410,7 +437,7 @@ class Link_Authority (Entity):
                 message_json = json.dumps(message)
 
                 print(message_json)
-                self.send(self.connected_Entities['RA'], message_json)
+                self.send(self.connected_Entities['RA'], message_json.encode())
             else:
                 print("Invalid LA cert")
         else:  # The source of the packet is not known
@@ -611,7 +638,7 @@ if __name__ == '__main__':
     VEH.add_LA2(LA2)
     VEH.add_PCA(PCA)
 
-    PCA.add_LA1(RA)
+    PCA.add_LA1(LA1)
     PCA.add_LA2(LA2)
     PCA.add_RA(RA)
     PCA.add_vehicule(VEH)
