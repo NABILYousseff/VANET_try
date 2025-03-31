@@ -219,6 +219,23 @@ class Registration_Authority (Entity):
             aes_key = self.derive_aes_key(self.connected_Entities["LA1"])
             decrypt_PLV = self.aes_decrypt(aes_key, PLV)
             self.PLVs["PLV1"] = decrypt_PLV
+            if "PLV2" in self.PLVs.keys():
+                ID = base64.b64decode(json_data["id"])
+                veh_pub = self.pubkeys_house[ID]
+
+                message = {
+                    "id": json_data["id"],
+                    "Vehicule_pubkey": base64.b64encode(veh_pub).decode(),
+                    "PLV1": base64.b64encode(self.PLVs["PLV1"]).decode(),
+                    "PLV2": base64.b64encode(self.PLVs["PLV1"]).decode()
+                }
+                message_json = json.dumps(message)
+                print(message_json)
+
+                self.send(
+                    self.connected_Entities["PCA"], message_json.encode())
+            else:
+                pass
 
         elif source_entity == "LA2":
             data = packet.data.decode()
@@ -228,16 +245,20 @@ class Registration_Authority (Entity):
             decrypt_PLV = self.aes_decrypt(aes_key, PLV)
             self.PLVs["PLV2"] = decrypt_PLV
             if "PLV1" in self.PLVs.keys():
+                ID = base64.b64decode(json_data["id"])
+                veh_pub = self.pubkeys_house[ID]
 
                 message = {
                     "id": json_data["id"],
+                    "Vehicule_pubkey": base64.b64encode(veh_pub).decode(),
                     "PLV1": base64.b64encode(self.PLVs["PLV1"]).decode(),
                     "PLV2": base64.b64encode(self.PLVs["PLV1"]).decode()
                 }
                 message_json = json.dumps(message)
+                print(message_json)
+
                 self.send(
                     self.connected_Entities["PCA"], message_json.encode())
-                print(message_json)
             else:
                 pass
 
@@ -431,7 +452,7 @@ class Link_Authority (Entity):
                         r1 = r2
                 self.save_hash_to_json(m1, r1, filename, PLV)
                 message = {
-                    "id": veh_id,
+                    "id": json_data["id"],
                     "PLV": base64.b64encode(encrypt_for_RA).decode()
                 }
                 message_json = json.dumps(message)
