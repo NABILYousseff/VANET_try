@@ -16,7 +16,7 @@ class Long_Term_Certificate_Authority (Entity):
         self.connected_vehicule += 1
         self.connected_Entities["VEH_"+str(self.connected_vehicule)] = VEH
 
-    def packet_forwarding(self, packet: mini_packet):
+    def packet_processing(self, packet: mini_packet):
         source_entity = self.get_msg_Entity_source(packet.address)
         print('LTCA received a message from ', source_entity)
         if source_entity == "RA":
@@ -43,7 +43,7 @@ class Long_Term_Certificate_Authority (Entity):
         while True:
             if len(buffer) != 0:
                 packet = buffer[0]
-                self.packet_forwarding(packet)
+                self.packet_processing(packet)
                 buffer.pop(0)
 
     def start(self):

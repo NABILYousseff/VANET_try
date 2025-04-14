@@ -6,3 +6,4 @@ from .Link_Authority import *
 from .Long_Term_Certificate_Authority import *
 from .Pseudonym_Certificate_Authority import *
 from .Vehicule import *
+from .Cryptico import *

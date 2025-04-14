@@ -31,10 +31,14 @@ class Pseudonym_Certificate_Authority (Entity):
             PLV2=base64.b64decode(json_data["PLV2"])
             veh_pub=base64.b64decode(json_data["Vehicule_pubkey"])
             
-            aes_key = self.derive_aes_key(self.connected_Entities["LA1"])
+            aes_key = self.derive_aes_key_from_data(self.connected_Entities["LA1"].get_Public_Key().public_bytes(encoding=serialization.Encoding.PEM,
+                                                         format=serialization.PublicFormat.SubjectPublicKeyInfo))
             decrypt_PLV1 = int(self.aes_decrypt(aes_key, PLV1))
-            aes_key = self.derive_aes_key(self.connected_Entities["LA2"])
+            print("PLV1 is : ", decrypt_PLV1)
+            aes_key = self.derive_aes_key_from_data(self.connected_Entities["LA2"].get_Public_Key().public_bytes(encoding=serialization.Encoding.PEM,
+                                                         format=serialization.PublicFormat.SubjectPublicKeyInfo))
             decrypt_PLV2 = int(self.aes_decrypt(aes_key, PLV2))
+            print("PLV2 is : ", decrypt_PLV2)
             PC=decrypt_PLV1+decrypt_PLV2 % self.p
             aes_PCA_VEH=self.derive_aes_key_from_data(veh_pub)
             encrypt_PC_for_VEH = self.aes_encrypt(

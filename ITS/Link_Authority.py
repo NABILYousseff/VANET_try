@@ -11,7 +11,7 @@ class Link_Authority (Entity):
         super().__init__(sending_address, listening_address)
         self.connected_vehicule = 0
         while True:
-            self.id = random.randint(0,5e12)
+            self.id = random.randint(0,int(5e12))
             self.filename = "LA_"+str(self.id)+".json"
             self.file_path = Path(self.filename)
             if self.file_path.exists() == False:
@@ -32,6 +32,17 @@ class Link_Authority (Entity):
     def add_vehicule(self, VEH):
         self.connected_vehicule += 1
         self.connected_Entities["VEH_"+str(self.connected_vehicule)] = VEH
+        id_veh=str(random.randint(0,int(5e12)))
+        LA_certif='LA_cert'+id_veh                                                   # to change with a real cert
+        m, r = int.from_bytes(os.urandom(32), 'big') % self.p, int.from_bytes(
+                    os.urandom(32), 'big') % self.p
+        H, _ = self.chameleon_hash_and_PLV(m, r)
+        with open(self.filename,"r") as f:
+            data:list=json.load(f)
+            data.append({'id':LA_certif, 'message':m,'random':r, 'hash':H, 'PLVs':[]})
+        with open(self.filename,"w") as f:
+            json.dump(data,f)
+        return LA_certif
 
     def packet_forwarding(self, packet: mini_packet):
         source_entity = self.get_msg_Entity_source(packet.address)
@@ -47,17 +58,21 @@ class Link_Authority (Entity):
             LA_cert = self.aes_decrypt(aes_key, LA_cipher).decode()
             with open(self.filename,"r") as f:
                 file_content:list=json.load(f)
+            valid_cert=False
             #Condition pour la verififcation de la certif
             for record_num in range(len(file_content)):
                 if LA_cert == file_content[record_num]['id']:
-                    aes_PC_LA_key = self.derive_aes_key(
-                        self.connected_Entities["PCA"])
-                    aes_RA_LA_key = self.derive_aes_key(
-                        self.connected_Entities["RA"])
+                    valid_cert=True
+                    aes_PC_LA_key = self.derive_aes_key_from_data(
+                        self.connected_Entities["PCA"].get_Public_Key().public_bytes(encoding=serialization.Encoding.PEM,
+                                                         format=serialization.PublicFormat.SubjectPublicKeyInfo))           #not
+                    aes_RA_LA_key = self.derive_aes_key_from_data(
+                        self.connected_Entities["RA"].get_Public_Key().public_bytes(encoding=serialization.Encoding.PEM,
+                                                         format=serialization.PublicFormat.SubjectPublicKeyInfo))            #not
                     m1, r1 = file_content[record_num]["message"], file_content[record_num]["random"]
                     m2 = int.from_bytes(os.urandom(32), 'big') % self.p
-                    r2 = self.find_collision(m1, r1, m2, self.p)
-                    H, PLV = self.chameleon_hash_and_PLV(m2, r2, self.p, self.g)
+                    r2 = self.find_collision(m1, r1, m2)
+                    H, PLV = self.chameleon_hash_and_PLV(m2, r2)
                     assert(H==file_content[record_num]["hash"])
                     file_content[record_num]["PLVs"].append(PLV)
                     with open(self.filename,"w") as f:
@@ -72,8 +87,8 @@ class Link_Authority (Entity):
                     message_json = json.dumps(message)
                     encrypt_for_RA = self.aes_encrypt(aes_RA_LA_key,message_json.encode())
                     self.send(self.connected_Entities['RA'], encrypt_for_RA)
-                else:
-                    print("Invalid LA cert")
+            if not valid_cert:
+                print("Invalid LA cert")
         else:  # The source of the packet is not known
             pass
 

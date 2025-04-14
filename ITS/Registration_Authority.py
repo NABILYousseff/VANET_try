@@ -34,7 +34,8 @@ class Registration_Authority (Entity):
         if source_entity == None:
             pass  # The source of the packet is not known
         elif source_entity == "LA1":
-            aes_key = self.derive_aes_key(self.connected_Entities["LA1"])
+            aes_key = self.derive_aes_key_from_data(self.connected_Entities["LA1"].get_Public_Key().public_bytes(encoding=serialization.Encoding.PEM,
+                                                         format=serialization.PublicFormat.SubjectPublicKeyInfo))
             decrypt_data = self.aes_decrypt(aes_key, packet.data)
             data = decrypt_data.decode()
             json_data = json.loads(data)
@@ -58,7 +59,8 @@ class Registration_Authority (Entity):
                 pass
 
         elif source_entity == "LA2":
-            aes_key = self.derive_aes_key(self.connected_Entities["LA2"])
+            aes_key = self.derive_aes_key_from_data(self.connected_Entities["LA2"].get_Public_Key().public_bytes(encoding=serialization.Encoding.PEM,
+                                                         format=serialization.PublicFormat.SubjectPublicKeyInfo))
             decrypt_data = self.aes_decrypt(aes_key, packet.data)
             data = decrypt_data.decode()
             json_data = json.loads(data)
@@ -136,21 +138,14 @@ class Registration_Authority (Entity):
             data = packet.data.decode()
             json_data = json.loads(data)
             Cipher = base64.b64decode(json_data["CipherLTC"])
-            LA1_cipher = base64.b64decode(json_data["CipherLA1"])
-            LA2_cipher = base64.b64decode(json_data["CipherLA2"])
+            LA1_cipher = json_data["CipherLA1"]
+            LA2_cipher = json_data["CipherLA2"]
             v_pub = json_data["PubKey"]
             vehicule_pubkey = base64.b64decode(json_data["PubKey"])
-            aes_vehicule = self.derive_aes_key(VEH)
-            Nested_LTC_Cipher = self.aes_decrypt(aes_vehicule, Cipher)
-
-            Nested_LA1_Cipher = base64.b64encode(
-                self.aes_decrypt(aes_vehicule, LA1_cipher))
-            Nested_LA2_Cipher = base64.b64encode(
-                self.aes_decrypt(aes_vehicule, LA2_cipher))
             message = {
                 "id": ID_to_send,
                 "Vehicule_pubkey": v_pub,
-                "CipherLTC": base64.b64encode(Nested_LTC_Cipher).decode()
+                "CipherLTC": base64.b64encode(Cipher).decode()
             }
 
             message_json = json.dumps(message)
@@ -158,7 +153,7 @@ class Registration_Authority (Entity):
             self.send(self.connected_Entities['LTCA'], message_json.encode())
 
             self.RA_buffer.append(
-                [ID, v_pub, Nested_LA1_Cipher.decode(), Nested_LA2_Cipher.decode(), VEH])
+                [ID, v_pub, LA1_cipher, LA2_cipher, VEH])
             self.pubkeys_house[ID] = vehicule_pubkey
 
     def forward_and_empty_buffer(self, buffer: list[mini_packet]):
