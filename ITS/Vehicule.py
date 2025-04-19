@@ -9,7 +9,7 @@ class Vehicule (Entity):
         super().__init__(sending_address, listening_address)
         self.Pseudo_cert=[]
 
-    def set_LA_cert(self,LA1_cert,LA2_cert,LTCA_cert):
+    def set_LA_cert(self,LA1_cert, LA2_cert, LTCA_cert):
         self.LA1_certif = LA1_cert
         self.LA2_certif = LA2_cert
         self.LT_certif  = LTCA_cert
