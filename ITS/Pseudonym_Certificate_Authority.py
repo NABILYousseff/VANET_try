@@ -17,10 +17,6 @@ class Pseudonym_Certificate_Authority (Entity):
     def add_RA(self, RA):
         self.connected_Entities["RA"] = RA
 
-    def add_vehicule(self, VEH):
-        self.connected_vehicule += 1
-        self.connected_Entities["VEH_"+str(self.connected_vehicule)] = VEH
-
     def packet_forwarding(self, packet: mini_packet):
         source_entity = self.get_msg_Entity_source(packet.address)
         print('PCA had received a message from ', source_entity)

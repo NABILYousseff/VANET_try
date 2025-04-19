@@ -2,19 +2,38 @@ from .Entity import *
 import threading
 import json
 import base64
+from pathlib import Path
 
 class Long_Term_Certificate_Authority (Entity):
     def __init__(self, sending_address, listening_address):
         super().__init__(sending_address, listening_address)
         self.connected_vehicule = 0
-        self.LTC_validity = {}
+        self.id = random.randint(0,int(5e12))
+        self.id = random.randint(0,int(5e12))
+        self.filename = "LTCA_"+str(self.id)+".json"
+        self.file_path = Path(self.filename)
+        if self.file_path.exists() == False:
+            with open(self.filename, "w") as f:
+                #entree sous forme de [{'id':id in the content of LTC, 'LTC':Long term certif}]
+                file_init=[]
+                json.dump(file_init, f)
 
     def add_RA(self, RA):
         self.connected_Entities["RA"] = RA
 
-    def add_vehicule(self, VEH):
-        self.connected_vehicule += 1
-        self.connected_Entities["VEH_"+str(self.connected_vehicule)] = VEH
+    def newVehicule(self):
+        id_veh=str(random.randint(0,int(5e12)))
+        #TODO change this line after finding a cert generator
+        LT_certif='LT_cert'+id_veh                                                   # to change with a real cert_content
+        with open(self.filename,"r") as f:
+            data:list=json.load(f)
+            #TODO change this line after finding a cert generator
+            data.append({'id':LT_certif, 'LTC':LT_certif})
+        with open(self.filename,"w") as f:
+            json.dump(data,f)
+        return LT_certif
+
+        
 
     def packet_processing(self, packet: mini_packet):
         source_entity = self.get_msg_Entity_source(packet.address)
@@ -27,12 +46,18 @@ class Long_Term_Certificate_Authority (Entity):
                 json_data["Vehicule_pubkey"])
             LTC = base64.b64decode(json_data["CipherLTC"])
             aes_key = self.derive_aes_key_from_data(vehicule_pubkey)
-            LTC_decrypted = self.aes_decrypt(aes_key, LTC)
-            if LTC_decrypted == b"LT_CERT":
-                self.LTC_validity[ID] = "valid"
+            LTC_decrypted = self.aes_decrypt(aes_key, LTC).decode()
+            
+            with open(self.filename,"r") as f:
+                file_content:list=json.load(f)
+            LTC_validity = "invalid" 
+            for record in file_content:
+                #TODO change this line after finding a cert generator to handle the comparaison
+                if record['id'] == LTC_decrypted:
+                    LTC_validity = "valid"     
             message = {
                 "id": ID,
-                "validity": self.LTC_validity[ID]
+                "validity": LTC_validity
             }
             message_json = json.dumps(message)
             self.send(self.connected_Entities['RA'], message_json.encode())

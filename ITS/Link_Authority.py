@@ -16,7 +16,7 @@ class Link_Authority (Entity):
             self.file_path = Path(self.filename)
             if self.file_path.exists() == False:
                 with open(self.filename, "w") as f:
-                    #entree sous forme de [{'id':accorde par le certif, 'message':m1,'random':random, 'hash':chameleon hash, 'PLVs':[PLV1,PLV2,....]}]
+                    #entree sous forme de [{'id':id in the content of LA, 'message':m1,'random':random, 'hash':chameleon hash, 'PLVs':[PLV1,PLV2,....]}]
                     file_init=[]
                     json.dump(file_init, f)
                 break
@@ -29,17 +29,18 @@ class Link_Authority (Entity):
     def add_PCA(self, PCA):
         self.connected_Entities["PCA"] = PCA
 
-    def add_vehicule(self, VEH):
-        self.connected_vehicule += 1
-        self.connected_Entities["VEH_"+str(self.connected_vehicule)] = VEH
+    def newVehicule(self):
         id_veh=str(random.randint(0,int(5e12)))
-        LA_certif='LA_cert'+id_veh                                                   # to change with a real cert
+        #TODO change this line after finding a cert generator
+        LA_certif='LA_cert'+id_veh                                                   # to change with a real cert_content
+        veh_Sk=ec.generate_private_key(ec.SECP256R1()).private_numbers().private_value
         m, r = int.from_bytes(os.urandom(32), 'big') % self.p, int.from_bytes(
                     os.urandom(32), 'big') % self.p
-        H, _ = self.chameleon_hash_and_PLV(m, r)
+        H = Cryptico.chameleon_hash(veh_Sk,m, r)
         with open(self.filename,"r") as f:
             data:list=json.load(f)
-            data.append({'id':LA_certif, 'message':m,'random':r, 'hash':H, 'PLVs':[]})
+            #TODO change this line after finding a cert generator
+            data.append({'id':LA_certif, 'message':m,'random':r, 'hash':H, 'PLVs':[],'Sk':veh_Sk})   #the la certif can be changed with a certificate content
         with open(self.filename,"w") as f:
             json.dump(data,f)
         return LA_certif
@@ -51,7 +52,7 @@ class Link_Authority (Entity):
             data = packet.data.decode()
             json_data = json.loads(data)
             veh_pub = base64.b64decode(json_data["Vehicule_pubkey"])
-            veh_id = int.from_bytes(base64.b64decode(json_data["id"]), 'big')
+            # veh_id = int.from_bytes(base64.b64decode(json_data["id"]), 'big')
             aes_key = self.derive_aes_key_from_data(
                 veh_pub)
             LA_cipher = base64.b64decode(json_data["LA_cipher"])
@@ -59,8 +60,9 @@ class Link_Authority (Entity):
             with open(self.filename,"r") as f:
                 file_content:list=json.load(f)
             valid_cert=False
-            #Condition pour la verififcation de la certif
+            # Condition pour la verififcation de la certif
             for record_num in range(len(file_content)):
+                 #TODO change this line after finding a cert generator to handle the comparaison
                 if LA_cert == file_content[record_num]['id']:
                     valid_cert=True
                     aes_PC_LA_key = self.derive_aes_key_from_data(
@@ -70,9 +72,10 @@ class Link_Authority (Entity):
                         self.connected_Entities["RA"].get_Public_Key().public_bytes(encoding=serialization.Encoding.PEM,
                                                          format=serialization.PublicFormat.SubjectPublicKeyInfo))            #not
                     m1, r1 = file_content[record_num]["message"], file_content[record_num]["random"]
+                    veh_Sk = file_content[record_num]['Sk']
                     m2 = int.from_bytes(os.urandom(32), 'big') % self.p
-                    r2 = self.find_collision(m1, r1, m2)
-                    H, PLV = self.chameleon_hash_and_PLV(m2, r2)
+                    r2 = Cryptico.find_collision(veh_Sk,m1, r1, m2)
+                    H, PLV = Cryptico.chameleon_hash(veh_Sk,m2, r2), Cryptico.group_addition(m2,r2)
                     assert(H==file_content[record_num]["hash"])
                     file_content[record_num]["PLVs"].append(PLV)
                     with open(self.filename,"w") as f:

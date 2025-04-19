@@ -10,7 +10,7 @@ import hashlib
 
 class Cryptico:
 
-    def chameleon_hash(s_k:ec.EllipticCurvePrivateKey, m:int, r:int, p:int=NIST256p.order, g:int=NIST256p.generator):
+    def chameleon_hash(s_k:int, m:int, r:int, p:int=NIST256p.order, g:int=NIST256p.generator):
         term = (m + r * s_k) % p
         result = g * term
         hash_result = hashlib.sha256(
@@ -20,7 +20,7 @@ class Cryptico:
     def group_addition(m:int, r:int, p:int=NIST256p.order):
         return (m + r) % p
     
-    def find_collision(s_k:ec.EllipticCurvePrivateKey, m1:int, r1:int, m2:int, p:int=NIST256p.order):
+    def find_collision(s_k:int, m1:int, r1:int, m2:int, p:int=NIST256p.order):
         delta_m = (m1 - m2) % p
         sk_inv = numbertheory.inverse_mod(s_k, p)
         r2 = (r1 + delta_m * sk_inv) % p

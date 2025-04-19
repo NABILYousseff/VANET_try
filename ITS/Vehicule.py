@@ -9,9 +9,10 @@ class Vehicule (Entity):
         super().__init__(sending_address, listening_address)
         self.Pseudo_cert=[]
 
-    def set_LA_cert(self,LA1_cert,LA2_cert):
-        self.LA1_certif=LA1_cert
-        self.LA2_certif=LA2_cert
+    def set_LA_cert(self,LA1_cert,LA2_cert,LTCA_cert):
+        self.LA1_certif = LA1_cert
+        self.LA2_certif = LA2_cert
+        self.LT_certif  = LTCA_cert
 
 
     def add_LA1(self, LA):
@@ -82,3 +83,6 @@ class Vehicule (Entity):
         veh_listening_thread.start()
         forwarding_thread = threading.Thread(target=self.forward_and_empty_buffer, args=(self.buffer,))
         forwarding_thread.start()
+
+    def requestPC(self):
+        pass

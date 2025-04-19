@@ -99,14 +99,13 @@ class Entity:
         return Cryptico.derive_aes_key( self.__Private_Key, public_key)
 
     def get_msg_Entity_source(self, address: Address):
-        # On traite notre cas ou juste les port sont differents
+        # We process our case where we use only the localhost while changing ports for the sum of entities
         for name, entity in self.connected_Entities.items():
             if address.Port == entity.sending_address.Port:
                 return name
         return None
 
     @abstractmethod
-    
     def packet_processing(self, packet: mini_packet):
         """
         The function will process the given packet and decide what to do whit it.
@@ -129,12 +128,3 @@ class Entity:
     @abstractmethod
     def start(self):
         pass
-
-    def chameleon_hash_and_PLV(self, m, r):
-        hash_result = Cryptico.chameleon_hash(self.get_Private_value(), m, r)
-        PLV = Cryptico.group_addition(m, r)
-        return hash_result, PLV
-
-    def find_collision(self, m1, r1, m2):
-        s_k = self.get_Private_value()
-        return Cryptico.find_collision(s_k, m1, r1, m2)
