@@ -13,7 +13,12 @@ class Vehicule (Entity):
         self.LA1_certif = LA1_cert
         self.LA2_certif = LA2_cert
         self.LT_certif  = LTCA_cert
-
+    
+    def set_PKs(self, Pkey_RA, Pkey_LTCA, Pkey_LA1, Pkey_LA2):
+        self.Pkey_RA = Pkey_RA
+        self.Pkey_LTCA = Pkey_LTCA
+        self.Pkey_LA1 = Pkey_LA1
+        self.Pkey_LA2 = Pkey_LA2
 
     def add_LA1(self, LA):
         self.connected_Entities["LA1"] = LA
@@ -53,29 +58,26 @@ class Vehicule (Entity):
 
     def send_request(self):
 
-        public_key_bytes = self.get_Public_Key().public_bytes(encoding=serialization.Encoding.PEM, 
-                                                              format=serialization.PublicFormat.SubjectPublicKeyInfo)
+        public_key_bytes = self.get_Public_Key().public_bytes(encoding=serialization.Encoding.PEM,
+                                                         format=serialization.PublicFormat.SubjectPublicKeyInfo)
+        aes_key_LTCA = self.derive_aes_key_from_data(self.Pkey_LTCA)
+        aes_key_LA1 = self.derive_aes_key_from_data(self.Pkey_LA1)
+        aes_key_LA2 = self.derive_aes_key_from_data(self.Pkey_LA2)
+        aes_key_RA = self.derive_aes_key_from_data(self.Pkey_RA)
         
-        aes_key_LTCA = self.derive_aes_key(self.connected_Entities["LTCA"])
-        aes_key_LA1 = self.derive_aes_key(self.connected_Entities["LA1"])
-        aes_key_LA2 = self.derive_aes_key(self.connected_Entities["LA2"])
-        aes_key_RA = self.derive_aes_key(self.connected_Entities["RA"])
 
         LA1_encryption = self.aes_encrypt(aes_key_LA1, self.LA1_certif.encode())
         LA2_encryption = self.aes_encrypt(aes_key_LA2, self.LA2_certif.encode())
-        second_LA1_encryption = self.aes_encrypt(aes_key_RA, LA1_encryption)
-        second_LA2_encryption = self.aes_encrypt(aes_key_RA, LA2_encryption)
-
-        first_encryption = self.aes_encrypt(aes_key_LTCA, b"LT_CERT")
-        second_encryption = self.aes_encrypt(aes_key_RA, first_encryption)
-
+        LTC_encryption = self.aes_encrypt(aes_key_LTCA, self.LT_certif.encode())
+        
         message = {
             "PubKey": base64.b64encode(public_key_bytes).decode(),
-            "CipherLTC": base64.b64encode(second_encryption).decode(),
-            "CipherLA1": base64.b64encode(second_LA1_encryption).decode(),
-            "CipherLA2": base64.b64encode(second_LA2_encryption).decode()
+            "CipherLTC": base64.b64encode(LTC_encryption).decode(),
+            "CipherLA1": base64.b64encode(LA1_encryption).decode(),
+            "CipherLA2": base64.b64encode(LA2_encryption).decode()
         }
         message_json = json.dumps(message)
+
         self.send(self.connected_Entities["RA"],  message_json.encode())
 
     def start(self):

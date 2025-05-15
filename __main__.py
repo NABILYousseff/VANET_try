@@ -8,16 +8,16 @@ import base64
 if __name__ == '__main__':
 
 # ---------------------------------- Address INIT ------------------------------------------------------
-    ra_sending_address = Address('localhost', 5000)
-    ra_listening_address = Address('localhost', 5006)
-    la1_sending_address = Address('localhost', 5001)
-    la1_listening_address = Address('localhost', 5007)
-    la2_sending_address = Address('localhost', 5002)
-    la2_listening_address = Address('localhost', 5008)
-    LTCA_sending_address = Address('localhost', 5003)
-    LTCA_listening_address = Address('localhost', 5009)
-    PCA_sending_address = Address('localhost', 5004)
-    PCA_listening_address = Address('localhost', 5010)
+    ra_sending_address = Address('localhost', 50000)
+    ra_listening_address = Address('localhost', 50006)
+    la1_sending_address = Address('localhost', 50001)
+    la1_listening_address = Address('localhost', 50007)
+    la2_sending_address = Address('localhost', 50002)
+    la2_listening_address = Address('localhost', 50008)
+    LTCA_sending_address = Address('localhost', 50003)
+    LTCA_listening_address = Address('localhost', 50009)
+    PCA_sending_address = Address('localhost', 50004)
+    PCA_listening_address = Address('localhost', 50010)
 
 # ------------------------------- Entities creation  ---------------------------------------------------
     RA = Registration_Authority(ra_sending_address, ra_listening_address)
@@ -28,82 +28,30 @@ if __name__ == '__main__':
         PCA_sending_address, PCA_listening_address)
     LA1 = Link_Authority(la1_sending_address, la1_listening_address)
     LA2 = Link_Authority(la2_sending_address, la2_listening_address)
-    VEH = newVehicule(5005,50011,RA,LTCA,LA1,LA2,PCA)
 # -------------------------- Recognition (linking entities) --------------------------------------------
+    initArch(RA,LTCA,LA1,LA2,PCA)
 
-    RA.add_LA1(LA1)
-    RA.add_LA2(LA2)
-    RA.add_LTCA(LTCA)
-    RA.add_PCA(PCA)
-
-    LTCA.add_RA(RA)
-
-    #VEH.add_RA(RA)
-    #VEH.add_PCA(PCA)
-    #VEH.add_LA1(LA1)
-    #VEH.add_LA2(LA2)
-    #VEH.add_PCA(PCA)
-
-    PCA.add_LA1(LA1)
-    PCA.add_LA2(LA2)
-    PCA.add_RA(RA)
-
-    LA1.add_PCA(PCA)
-    LA1.add_RA(RA)
-    #LA1_cert = LA1.add_vehicule(VEH)
-
-    LA2.add_PCA(PCA)
-    LA2.add_RA(RA)
-    #LA2_cert = LA2.add_vehicule(VEH)
-
-    #VEH.set_LA_cert(LA1_cert,LA2_cert)
-    
+#-------------------------------- Main Program ---------------------------------------------------------
     print("-------------__Starting programme__-------------\n")
     
+    # Vehicule creation
+    VEH = newVehicule(50005,50011,RA,LTCA,LA1,LA2,PCA)
+    VEH2 = newVehicule(40007,40400,RA,LTCA,LA1,LA2,PCA)
+   
     # Starting services
     print("Starting services...\n")
     RA.start()
-    VEH.start()
     LTCA.start()
     PCA.start()
     LA1.start()
     LA2.start()
+    VEH.start()
+    VEH2.start()
     print("Services Started!!\n")
 
     time.sleep(4) # waiting_for_all_autorities_to_be_ready!!
     print('start sending')
 
-
-
-    """ 
-
-    The following code can be added to the vehicules class
-
-    """
-
-    public_key_bytes = VEH.get_Public_Key().public_bytes(encoding=serialization.Encoding.PEM,
-                                                         format=serialization.PublicFormat.SubjectPublicKeyInfo)
-    aes_key_LTCA = VEH.derive_aes_key_from_data(LTCA.get_Public_Key().public_bytes(encoding=serialization.Encoding.PEM,
-                                                         format=serialization.PublicFormat.SubjectPublicKeyInfo))
-    aes_key_LA1 = VEH.derive_aes_key_from_data(LA1.get_Public_Key().public_bytes(encoding=serialization.Encoding.PEM,
-                                                         format=serialization.PublicFormat.SubjectPublicKeyInfo))
-    aes_key_LA2 = VEH.derive_aes_key_from_data(LA2.get_Public_Key().public_bytes(encoding=serialization.Encoding.PEM,
-                                                         format=serialization.PublicFormat.SubjectPublicKeyInfo))
-    aes_key_RA = VEH.derive_aes_key_from_data(RA.get_Public_Key().public_bytes(encoding=serialization.Encoding.PEM,
-                                                         format=serialization.PublicFormat.SubjectPublicKeyInfo))
-
-    LA1_encryption = VEH.aes_encrypt(aes_key_LA1, VEH.LA1_certif.encode())
-    LA2_encryption = VEH.aes_encrypt(aes_key_LA2, VEH.LA2_certif.encode())
-    LTC_encryption = VEH.aes_encrypt(aes_key_LTCA, VEH.LT_certif.encode())
-
-    message = {
-        "PubKey": base64.b64encode(public_key_bytes).decode(),
-        "CipherLTC": base64.b64encode(LTC_encryption).decode(),
-        "CipherLA1": base64.b64encode(LA1_encryption).decode(),
-        "CipherLA2": base64.b64encode(LA2_encryption).decode()
-    }
-    message_json = json.dumps(message)
-    VEH.send(RA,  message_json.encode())
-    #VEH.send(RA,  message_json.encode())
-
-    #VEH.send_request()
+    VEH.send_request()
+    time.sleep(120)
+    VEH2.send_request()

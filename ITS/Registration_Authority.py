@@ -33,23 +33,24 @@ class Registration_Authority (Entity):
         print('RA received a message from ', source_entity)
         if source_entity == None:
             pass  # The source of the packet is not known
-        elif source_entity == "LA1":
-            aes_key = self.derive_aes_key_from_data(self.connected_Entities["LA1"].get_Public_Key().public_bytes(encoding=serialization.Encoding.PEM,
+        elif source_entity == "LA1" or source_entity == "LA2":
+            aes_key = self.derive_aes_key_from_data(self.connected_Entities[source_entity].get_Public_Key().public_bytes(encoding=serialization.Encoding.PEM,
                                                          format=serialization.PublicFormat.SubjectPublicKeyInfo))
             decrypt_data = self.aes_decrypt(aes_key, packet.data)
             data = decrypt_data.decode()
             json_data = json.loads(data)
             PLV = base64.b64decode(json_data["PLV"])
-            self.PLVs["PLV1"] = PLV
-            if "PLV2" in self.PLVs.keys():
-                ID = base64.b64decode(json_data["id"])
+            ID = base64.b64decode(json_data["id"]) #Here
+            self.PLVs[ID]["PLV"+source_entity[2]] = PLV
+            otherPLV = "PLV1" if source_entity[2]=="2" else "PLV2"
+            if otherPLV in self.PLVs[ID].keys():
                 veh_pub = self.pubkeys_house[ID]
 
                 message = {
                     "id": json_data["id"],
                     "Vehicule_pubkey": base64.b64encode(veh_pub).decode(),
-                    "PLV1": base64.b64encode(self.PLVs["PLV1"]).decode(),
-                    "PLV2": base64.b64encode(self.PLVs["PLV2"]).decode()
+                    "PLV1": base64.b64encode(self.PLVs[ID]["PLV1"]).decode(),
+                    "PLV2": base64.b64encode(self.PLVs[ID]["PLV2"]).decode()
                 }
                 message_json = json.dumps(message)
 
@@ -57,32 +58,7 @@ class Registration_Authority (Entity):
                     self.connected_Entities["PCA"], message_json.encode())
             else:
                 pass
-
-        elif source_entity == "LA2":
-            aes_key = self.derive_aes_key_from_data(self.connected_Entities["LA2"].get_Public_Key().public_bytes(encoding=serialization.Encoding.PEM,
-                                                         format=serialization.PublicFormat.SubjectPublicKeyInfo))
-            decrypt_data = self.aes_decrypt(aes_key, packet.data)
-            data = decrypt_data.decode()
-            json_data = json.loads(data)
-            PLV = base64.b64decode(json_data["PLV"])
-            self.PLVs["PLV2"] = PLV
-            if "PLV1" in self.PLVs.keys():
-                ID = base64.b64decode(json_data["id"])
-                veh_pub = self.pubkeys_house[ID]
-
-                message = {
-                    "id": json_data["id"],
-                    "Vehicule_pubkey": base64.b64encode(veh_pub).decode(),
-                    "PLV1": base64.b64encode(self.PLVs["PLV1"]).decode(),
-                    "PLV2": base64.b64encode(self.PLVs["PLV2"]).decode()
-                }
-                message_json = json.dumps(message)
-
-                self.send(
-                    self.connected_Entities["PCA"], message_json.encode())
-            else:
-                pass
-
+        
         elif source_entity == "LTCA":
             print('Sending Linkage certif to LA1 and LA2..')
             # verfying if response is true or false
@@ -133,6 +109,7 @@ class Registration_Authority (Entity):
         else:  # the entity is a vehicule implement then a function to send LTC in data to LTCA
             # processing...
             ID = os.urandom(32)
+            self.PLVs[ID] = {}
             ID_to_send = base64.b64encode(ID).decode()
             VEH = self.connected_Entities[source_entity]
             data = packet.data.decode()
@@ -155,6 +132,7 @@ class Registration_Authority (Entity):
             self.RA_buffer.append(
                 [ID, v_pub, LA1_cipher, LA2_cipher, VEH])
             self.pubkeys_house[ID] = vehicule_pubkey
+
 
     def forward_and_empty_buffer(self, buffer: list[mini_packet]):
         while True:

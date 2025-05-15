@@ -27,7 +27,34 @@ def newVehicule(sending_address:int,listening_address:int,RA:Registration_Author
     
     VEH.set_LA_cert(LA1.newVehicule(), LA2.newVehicule(), LTCA.newVehicule())
     
+    
+    Pkey_LTCA = LTCA.get_Public_Key().public_bytes(encoding=serialization.Encoding.PEM,
+                                                         format=serialization.PublicFormat.SubjectPublicKeyInfo)
+    Pkey_LA1 = LA1.get_Public_Key().public_bytes(encoding=serialization.Encoding.PEM,
+                                                         format=serialization.PublicFormat.SubjectPublicKeyInfo)
+    Pkey_LA2 = LA2.get_Public_Key().public_bytes(encoding=serialization.Encoding.PEM,
+                                                         format=serialization.PublicFormat.SubjectPublicKeyInfo)
+    Pkey_RA = RA.get_Public_Key().public_bytes(encoding=serialization.Encoding.PEM,
+                                                         format=serialization.PublicFormat.SubjectPublicKeyInfo)
+    
+    VEH.set_PKs( Pkey_RA, Pkey_LTCA, Pkey_LA1, Pkey_LA2)
+
     return VEH
 
-def initArch():
-    pass
+def initArch(RA:Registration_Authority,LTCA:Long_Term_Certificate_Authority,LA1:Link_Authority,LA2:Link_Authority,PCA:Pseudonym_Certificate_Authority):  
+    RA.add_LA1(LA1)
+    RA.add_LA2(LA2)
+    RA.add_LTCA(LTCA)
+    RA.add_PCA(PCA)
+
+    LTCA.add_RA(RA)
+
+    PCA.add_LA1(LA1)
+    PCA.add_LA2(LA2)
+    PCA.add_RA(RA)
+
+    LA1.add_PCA(PCA)
+    LA1.add_RA(RA)
+
+    LA2.add_PCA(PCA)
+    LA2.add_RA(RA)
