@@ -74,6 +74,26 @@ class Pseudonym_Certificate_Authority (Entity):
                 self.packet_forwarding(packet)
                 buffer.pop(0)
 
+    def getPLV(self,PC):
+        with open(self.filename,"r") as f:
+                data:list=json.load(f)
+        for i in range(len(data)):
+            if data[i]['PC'] == PC:
+                PLV1=data[i]['PLV1']
+                PLV2=data[i]['PLV2']
+                return [PLV1,PLV2]
+        print("PCA: PC not found")
+        return [None, None]
+    
+    def getLinkedPCs(self,PLVS):
+        PCs=[]
+        with open(self.filename,"r") as f:
+                data:list=json.load(f)
+        for record in data:
+            if record["PLV1"] in PLVS:
+                PCs.append(record["PC"])
+        return PCs
+    
     def start(self):
         listening_thread = threading.Thread(
             target=self.listen_and_fill_buffer, args=(self.listening_address,))

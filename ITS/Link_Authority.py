@@ -102,6 +102,16 @@ class Link_Authority (Entity):
                 self.packet_forwarding(packet)
                 buffer.pop(0)
 
+    def getLinkedPLVs(self,PLV_to_link):
+        with open(self.filename,"r") as f:
+                file_content:list=json.load(f)
+        for record in file_content:
+            for PLV in record['PLVs']:
+                if PLV == PLV_to_link:
+                    return record['PLVs']
+        print("no such PLV")
+        return None
+
     def start(self):
         listening_thread = threading.Thread(
             target=self.listen_and_fill_buffer, args=(self.listening_address,))

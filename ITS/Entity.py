@@ -60,6 +60,7 @@ class Entity:
     def listen_and_fill_buffer(self, address: Address):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.bind((address.ip_address, address.Port))
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             while True:
                 s.listen(100)
                 conn, addr = s.accept()

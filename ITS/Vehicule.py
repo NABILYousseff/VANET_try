@@ -3,16 +3,37 @@ import threading
 import json
 import os
 import base64
+from pathlib import Path
 
 class Vehicule (Entity):
     def __init__(self, sending_address, listening_address):
         super().__init__(sending_address, listening_address)
         self.Pseudo_cert=[]
+        while True:
+            self.id = random.randint(0,int(5e12))
+            self.filename = "VEH_"+str(self.id)+".json"
+            self.file_path = Path(self.filename)
+            if self.file_path.exists() == False:
+                with open(self.filename, "w") as f:
+                    #entree sous forme de {'LT_cert', 'LA1_cert','LA2_cert', 'PCs':[PC1, PC2, ....] }
+                    file_init=dict()
+                    json.dump(file_init, f)
+                break
 
-    def set_LA_cert(self,LA1_cert, LA2_cert, LTCA_cert):
+    def set_cert(self,LA1_cert, LA2_cert, LT_cert):
         self.LA1_certif = LA1_cert
         self.LA2_certif = LA2_cert
-        self.LT_certif  = LTCA_cert
+        self.LT_certif  = LT_cert
+        with open(self.filename,"r") as f:
+                data:list=json.load(f)
+                #TODO change this line after finding a cert generator
+                data["LA1_cert"]=LA1_cert
+                data["LA2_cert"]=LA2_cert
+                data["LT_cert"]=LT_cert
+                data["PCs"]=[]
+        with open(self.filename,"w") as f:
+            json.dump(data,f)
+
     
     def set_PKs(self, Pkey_RA, Pkey_LTCA, Pkey_LA1, Pkey_LA2):
         self.Pkey_RA = Pkey_RA
@@ -37,7 +58,7 @@ class Vehicule (Entity):
 
     def packet_forwarding(self, packet: mini_packet):
         source_entity = self.get_msg_Entity_source(packet.address)
-        print('Vehicule had received a message from',source_entity)
+        print(f"\033[1;32mVehicule had received a message from {source_entity}\033[0m")
         if source_entity == "RA":
             data=packet.data.decode()
             json_data=json.loads(data)
@@ -46,6 +67,12 @@ class Vehicule (Entity):
                                                          format=serialization.PublicFormat.SubjectPublicKeyInfo))
             decrypt_PC = int(self.aes_decrypt(aes_key, PC))
             self.Pseudo_cert.append(decrypt_PC)
+            with open(self.filename,"r") as f:
+                data:list=json.load(f)
+                #TODO change this line after finding a cert generator
+                data["PCs"].append(decrypt_PC)   
+            with open(self.filename,"w") as f:
+                json.dump(data,f)
         else:
             pass  # The source of the packet is not unknown
 
@@ -77,7 +104,7 @@ class Vehicule (Entity):
             "CipherLA2": base64.b64encode(LA2_encryption).decode()
         }
         message_json = json.dumps(message)
-
+        print("\033[35mVEH send request\033[0m")
         self.send(self.connected_Entities["RA"],  message_json.encode())
 
     def start(self):
