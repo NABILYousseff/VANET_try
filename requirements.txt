@@ -1,0 +1,8 @@
+#Python
+
+ecdsa
+cryptography
+asn1crypto
+asn1tools
+
+#C

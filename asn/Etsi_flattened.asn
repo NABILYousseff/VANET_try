@@ -1,0 +1,157 @@
+ETSI DEFINITIONS AUTOMATIC TAGS
+::= BEGIN
+IMPORTS
+Uint8, Uint16, HashedId8, Time32,
+TwoDLocation, CircularRegion, Duration,
+RectangularRegion, HashAlgorithm,
+SubjectAssurance, SymmAlgorithm
+FROM Ieee1609Dot2BaseTypes {iso(1)
+identified-organization(3) ieee(111)
+standards-association-numbered-series-
+standards(2) wave-stds (1609)dot2(2)
+base(1) base-types(2)};
+
+CertificateAlias ::= Certificate
+
+Certificate ::= SEQUENCE {
+tbs ToBeSignedCertificate,
+signature Signature
+}
+ToBeSignedCertificate ::= SEQUENCE {
+  version               Uint8,
+  signerInfo            SignerInfo,
+  subjectInfo           SubjectInfo,
+  subjectAttributes     SubjectAttributes,
+  validityRestrictions  ValidityRestrictions,
+  ld LinkageData OPTIONAL
+}
+
+LinkageData ::= OCTET STRING(SIZE(32))
+
+Version ::= Uint8
+SignerInfo ::= CHOICE {
+self NULL,
+certificateDigestSHA256
+CertificateDigestSHA256,
+certificateDigestOtherAlgorithm
+CertificateDigestOtherAlgorithm
+}
+CertificateDigestSHA256 ::= HashedId8
+CertificateDigestOtherAlgorithm ::= SEQUENCE {
+algorithm HashAlgorithm,
+digest HashedId8
+}
+SubjectInfo ::= SEQUENCE {
+subjectType SubjectType,
+subjectName UTF8String (SIZE(0..32))
+}
+SubjectType ::= ENUMERATED {
+enrollment-credential(0),
+authorization-ticket(1),
+authorization-authority(2),
+enrollment-authority(3),
+root-ca(4),
+crl-signer(5)
+}
+SubjectAttributes ::= SEQUENCE {
+verificationKey VerificationKey,
+encryptionKey EncryptionKey OPTIONAL,
+assuranceLevel SubjectAssurance,
+reconstructionValue ReconstructionEccPoint
+OPTIONAL,
+itsList ITSList,
+...
+}
+PublicKey ::= SEQUENCE {
+algorithm PublicKeyAlgorithm,
+key EccPoint
+}
+PublicKeyAlgorithm ::= ENUMERATED {
+ecdsa-nistp256-with-sha256(0),
+ecies-nistp256(1),
+...
+}
+EccPoint ::= CHOICE {
+compressed-y-0 OCTET STRING (SIZE (32)),
+compressed-y-1 OCTET STRING (SIZE (32)),
+uncompressed SEQUENCE {
+x OCTET STRING (SIZE (32)),
+y OCTET STRING (SIZE (32))
+}
+}
+ReconstructionEccPoint ::= CHOICE {
+x-coordinate-only OCTET STRING (SIZE (32)),
+compressed-y-0 OCTET STRING (SIZE (32)),
+compressed-y-1 OCTET STRING (SIZE (32)),
+uncompressed SEQUENCE {
+x OCTET STRING (SIZE (32)),
+y OCTET STRING (SIZE (32))
+}
+}
+VerificationKey ::= PublicKey
+EncryptionKey ::= SEQUENCE {
+supported-symm-alg SymmAlgorithm,
+public-key PublicKey
+}
+ITSList ::= CHOICE {
+its-aid-list ITS-AID-LIST,
+its-aid-ssp-list ITS-AID-SSP-LIST
+}
+ITS-AID-LIST ::= SEQUENCE OF ITS-AID
+ITS-AID ::= INTEGER
+ITS-AID-SSP-LIST ::= SEQUENCE OF ItsAidSsp
+ItsAidSsp ::= SEQUENCE {
+its-aid ITS-AID,
+service-specific-permissions OCTET STRING
+(SIZE(0..31))
+}
+ValidityRestrictions ::= SEQUENCE {
+timeOfValidation ValidityRestrictionTime,
+region ValidityRestrictionRegion OPTIONAL,
+...
+}
+ValidityRestrictionTime ::= CHOICE {
+timeEnd Time32,
+timeStartAndEnd TimeStartAndEnd,
+timeStartAndDuration TimeStartAndDuration
+}
+TimeStartAndEnd ::= SEQUENCE {
+startValidity Time32,
+endValidity Time32
+}
+TimeStartAndDuration ::= SEQUENCE {
+startValidity Time32,
+duration Duration
+}
+ValidityRestrictionRegion ::= CHOICE {
+circularRegion CircularRegion,
+rectangularRegion RectangularRegions,
+polygonalRegion PolygonalRegion,
+identifiedRegion IdentifiedRegion,
+...
+}
+RectangularRegions ::= SEQUENCE SIZE(1..6) OF
+RectangularRegion
+PolygonalRegion ::= SEQUENCE SIZE(3..12) OF
+TwoDLocation
+IdentifiedRegion ::= SEQUENCE {
+regionDictionary RegionDictionary,
+regionIdentifier Uint16,
+localRegion INTEGER
+}
+RegionDictionary ::= ENUMERATED {
+iso-3166-1(0),
+un-stats(1)
+}
+Signature ::= EcdsaP256Signature
+EcdsaP256Signature ::= SEQUENCE {
+r SignatureEccPoint,
+s OCTET STRING (SIZE (32))
+}
+SignatureEccPoint ::= CHOICE {
+x-coordinate-only OCTET STRING (SIZE (32)),
+compressed-y-0 OCTET STRING (SIZE (32)),
+compressed-y-1 OCTET STRING (SIZE (32))
+}
+ToBeSignedCertificateAlias ::= ToBeSignedCertificate
+END
