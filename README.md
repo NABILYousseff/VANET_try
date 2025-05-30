@@ -196,6 +196,103 @@ These schemas define the structure for certificates, CRLs, and permissions, ensu
 
 ---
 
+## Project File and Folder Overview
+
+### Top-Level Files
+
+- **__main__.py**  
+  The main entry point for the simulation. Initializes all entities (RA, LTCA, PCA, LA1, LA2, vehicles), sets up their addresses, starts their services, and simulates vehicle requests and malicious behavior scenarios.
+
+- **generate_root_cert.py**  
+  Script to generate the root certificate authority (CA) key pair and certificate, which are used to sign other certificates in the system.
+
+- **README.md**  
+  This documentation file. Should provide an overview of the project, its structure, and usage instructions.
+
+- **requirements.txt**  
+  Lists all Python dependencies required to run the project.
+
+---
+
+### Folders
+
+#### asn/
+Contains ASN.1 schema files used for encoding/decoding certificates and messages according to vehicular communication standards.
+
+- **Etsi_flattened.asn**  
+  ASN.1 definitions for ETSI TS 103 097, describing certificate and message formats for European vehicular networks.
+
+- **Ieee1609Dot2BaseTypes.asn**  
+  ASN.1 definitions for IEEE 1609.2, describing base types, certificate structures, CRLs, and security envelopes for vehicular communications.
+
+---
+
+#### ca/
+Stores cryptographic material for the root certificate authority.
+
+- **root_ca.cert**  
+  The root CA certificate (public part).
+
+- **root_ca.key.pem**  
+  The root CA private key in PEM format.
+
+- **root_ca.pub.pem**  
+  The root CA public key in PEM format.
+
+---
+
+#### ITS/
+Main Python package containing all core logic for the simulation. Each file typically defines a class representing an entity or utility in the system.
+
+- **__init__.py**  
+  Marks the directory as a Python package.
+
+- **Address.py**  
+  Defines the `Address` class, which encapsulates host and port information for entity communication.
+
+- **certs_util.py**  
+  Utility functions for certificate creation, encoding/decoding, and cryptographic operations.
+
+- **Cryptico.py**  
+  Handles cryptographic primitives and operations (e.g., key generation, encryption, decryption).
+
+- **Entity.py**  
+  Base class for all entities (authorities and vehicles) in the system. Provides common methods for communication and state management.
+
+- **Link_Authority.py**  
+  Implements the Link Authority (LA) entity, which helps link pseudonyms to long-term identities and assists in certificate revocation.
+
+- **Long_Term_Certificate_Authority.py**  
+  Implements the Long-Term Certificate Authority (LTCA), responsible for issuing long-term certificates to vehicles.
+
+- **mini_packet.py**  
+  Defines the structure and handling of packets/messages exchanged between entities.
+
+- **Pseudonym_Certificate_Authority.py**  
+  Implements the Pseudonym Certificate Authority (PCA), which issues pseudonym certificates to vehicles for privacy.
+
+- **Registration_Authority.py**  
+  Implements the Registration Authority (RA), which registers vehicles and coordinates certificate issuance.
+
+- **Vehicule.py**  
+  Implements the vehicle entity. Handles certificate requests, stores received certificates, and can simulate malicious behavior.
+
+---
+
+### Summary
+
+- **asn/**: ASN.1 schemas for message/certificate encoding.
+- **ca/**: Root CA keys and certificate.
+- **ITS/**: All core simulation logic and entity implementations.
+- **__main__.py**: Simulation entry point.
+- **generate_root_cert.py**: Root CA generation.
+- **requirements.txt**: Python dependencies.
+- **README.md**: Project documentation.
+
+This structure supports a modular, extensible simulation of a secure vehicular communication system, following real-world standards.
+
+---
+
 ## References
 
 - ETSI TS 103 097: Intelligent Transport Systems (ITS); Security; Security header and certificate formats
