@@ -6,7 +6,7 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature, encode_dss_signature
 from cryptography.exceptions import InvalidSignature
 import hashlib
-from datetime import datetime, timedelta
+
 # Compile ASN.1
 spec = asn1tools.compile_files([
     'asn/Ieee1609Dot2BaseTypes.asn',
@@ -14,7 +14,20 @@ spec = asn1tools.compile_files([
 ], 'per')
 
 
-def build_enrollment_cert(subject_pub, issuer_cert_bytes, issuer_priv, subject_name):
+def build_enrollment_cert(subject_pub: ec.EllipticCurvePublicKey, issuer_cert_bytes: bytes, issuer_priv: ec.EllipticCurvePrivateKey, subject_name: str) -> bytes:
+    """
+    Builds an ETSI 103 097 enrollment certificate.
+
+    param
+    -----
+        subject_pub : Public key of the subject.
+        issuer_cert_bytes : DER-encoded certificate of the issuer.
+        issuer_priv : Private key of the issuer.
+        subject_name : Name of the subject, truncated to 32 bytes.
+    return
+    ------
+        bytes : DER-encoded certificate.
+    """
     now = int(time.time())
 
     hashed_issuer_cert = hashlib.sha256(issuer_cert_bytes).digest()[:8]
@@ -61,7 +74,21 @@ def build_enrollment_cert(subject_pub, issuer_cert_bytes, issuer_priv, subject_n
     return spec.encode("CertificateAlias", cert)
 
 
-def build_pseudonym_cert(subject_pub, issuer_cert_bytes, issuer_priv, subject_name="VEH_PSEUDONYM", linkage_value=None):
+def build_pseudonym_cert(subject_pub: ec.EllipticCurvePublicKey, issuer_cert_bytes: bytes, issuer_priv: ec.EllipticCurvePrivateKey, subject_name="VEH_PSEUDONYM", linkage_value=None) -> bytes:
+    """
+    Builds an ETSI 103 097 pseudonym certificate.
+
+    param
+    -----
+        subject_pub : Public key of the subject.
+        issuer_cert_bytes : DER-encoded certificate of the issuer.
+        issuer_priv : Private key of the issuer.
+        subject_name : Name of the subject, truncated to 32 bytes.
+        linkage_value : Optional linkage value to include in the certificate.
+    return
+    ------
+    bytes : DER-encoded certificate.
+    """
     now = int(time.time())
 
     hashed_issuer_cert = hashlib.sha256(issuer_cert_bytes).digest()[:8]
@@ -112,8 +139,18 @@ def build_pseudonym_cert(subject_pub, issuer_cert_bytes, issuer_priv, subject_na
 
     return spec.encode("CertificateAlias", cert)
 
+def build_root_ca_cert(key: ec.EllipticCurvePrivateKey, subject_name="ROOT_CA") -> bytes:
+    """
+    Builds a self-signed root CA certificate.
 
-def build_root_ca_cert(key, subject_name="ROOT_CA"):
+    param
+    -----
+        key : Private key of the root CA.
+        subject_name : Name of the root CA, truncated to 32 bytes.
+    return
+    ------
+        bytes : DER-encoded root CA certificate.
+    """
     now = int(time.time())
     tbs = {
         'version': 2,
@@ -139,7 +176,6 @@ def build_root_ca_cert(key, subject_name="ROOT_CA"):
                 'duration': ('seconds', 31536000)  # 1 year
             })
         }
-
     }
 
     tbs_encoded = spec.encode("ToBeSignedCertificateAlias", tbs)
@@ -157,7 +193,21 @@ def build_root_ca_cert(key, subject_name="ROOT_CA"):
     return spec.encode("CertificateAlias", cert)
 
 
-def build_authority_cert(subject_pub, issuer_cert_bytes, issuer_priv, subject_name="LTCA", authority_type='enrollment-authority'):
+def build_authority_cert(subject_pub: ec.EllipticCurvePublicKey, issuer_cert_bytes: bytes, issuer_priv: ec.EllipticCurvePrivateKey, subject_name="LTCA", authority_type='enrollment-authority') -> bytes:
+    """
+    Builds an ETSI 103 097 authority certificate.
+
+    param
+    -----
+        subject_pub : Public key of the subject.
+        issuer_cert_bytes : DER-encoded certificate of the issuer.
+        issuer_priv : Private key of the issuer.
+        subject_name : Name of the subject, truncated to 32 bytes.
+        authority_type : Type of the authority (e.g., 'enrollment-authority').
+    return
+    ------
+        bytes : DER-encoded authority certificate.
+    """
     now = int(time.time())
 
     hashed_issuer_cert = hashlib.sha256(issuer_cert_bytes).digest()[:8]
@@ -204,15 +254,15 @@ def build_authority_cert(subject_pub, issuer_cert_bytes, issuer_priv, subject_na
     return spec.encode("CertificateAlias", cert)
 
 
-def verify_cert_signature(cert_bytes: bytes, issuer_public_key) -> bool:
+def verify_cert_signature(cert_bytes: bytes, issuer_public_key: ec.EllipticCurvePublicKey) -> bool:
     """
     Verifies the signature of an ETSI 103 097 certificate.
 
-    Args:
+    Param:
         cert_bytes (bytes): DER-encoded certificate.
         issuer_public_key: cryptography public key object of issuer.
 
-    Returns:
+    return:
         bool: True if signature is valid, False otherwise.
     """
     # Step 1: Decode the certificate

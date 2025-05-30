@@ -10,7 +10,15 @@ from .certs_util import *
 
 
 class Long_Term_Certificate_Authority (Entity):
+    """Long Term Certificate Authority (LTCA) class handles the management of long-term certificates."""
     def __init__(self, sending_address, listening_address):
+        """
+        Initialize the Long Term Certificate Authority (LTCA) with the given addresses.
+        param
+        -----
+            sending_address : used for sending messages.
+            listening_address : used for listening to incoming messages.
+        """
         super().__init__(sending_address, listening_address)
         self.connected_vehicule = 0
 
@@ -21,7 +29,6 @@ class Long_Term_Certificate_Authority (Entity):
         else:
             print(f"[{self.__class__.__name__}] Cert already exists.")
 
-        # self.id = random.randint(0, int(5e12))
         self.filename = "LTCA_"+str(self.id)+".json"
         self.filename = "LTCA.json"
         self.file_path = Path(self.filename)
@@ -31,123 +38,18 @@ class Long_Term_Certificate_Authority (Entity):
                 file_init = []
                 json.dump(file_init, f)
 
-    def add_RA(self, RA):
+    def add_RA(self, RA: Entity):
+        """Add the Registration Authority (RA) to the connected entities.
+        param
+        -----
+            RA : The Registration Authority to add.
+        """
         self.connected_Entities["RA"] = RA
 
-    # def export_keys_for_certify(self, subject_entity, certs_dir: Path):
-    #     certs_dir.mkdir(parents=True, exist_ok=True)
-
-    #     subject_pub_path = certs_dir / \
-    #         f"{subject_entity.__class__.__name__}_{subject_entity.id}_priv.key"
-    #     issuer_priv_path = certs_dir / \
-    #         f"{self.__class__.__name__}_{self.id}_priv.key"
-    #     issuer_cert_path = certs_dir / \
-    #         f"{self.__class__.__name__}_{self.id}.cert"
-
-    # # Export subject public key
-    #     # pub_key = subject_entity.get_Public_Key()
-    #     # pub_numbers = pub_key.public_numbers()
-    #     # x_bytes = pub_numbers.x.to_bytes(32, 'big')
-    #     # y_bytes = pub_numbers.y.to_bytes(32, 'big')
-
-    #     # ecc_point = EccPoint({
-    #     #     'algorithm': 'ecdsa_nistp256',  # Assuming '0' means ecdsa_nistp256 in ETSI
-    #     #     'field_size': 32,
-    #     #     'type': 'uncompressed',
-    #     #     'x': x_bytes,
-    #     #     'y': y_bytes
-    #     # })
-    #     # pub_bytes = pub_key.public_bytes(
-    #     #     encoding=serialization.Encoding.X962,  # uncompressed EC point
-    #     #     format=serialization.PublicFormat.UncompressedPoint
-    #     # )
-    #     # asn1_pub = PublicKeyInfo({
-    #     #     'algorithm': {
-    #     #         'algorithm': 'ec',
-    #     #         'parameters': {'named': 'secp256r1'}
-    #     #     },
-    #     #     'public_key': pub_bytes
-    #     # })
-    #     priv_num_subj = subject_entity._Entity__Private_Key.private_numbers().private_value
-    #     # priv_bytes = priv_num.to_bytes(32, 'big')
-
-    #     priv_key_subj = ECPrivateKey({
-    #         'version': 'ecPrivkeyVer1',
-    #         'private_key': priv_num_subj,
-    #         'parameters': {'named': 'secp256r1'}
-    #     })
-
-# # Wrap it in PrivateKeyInfo
-    #     wrapped_subj = PrivateKeyInfo({
-    #         'version': 0,
-    #         'private_key_algorithm': {
-    #             'algorithm': 'ec',
-    #             'parameters': {'named': 'secp256r1'}
-    #         },
-    #         'private_key': priv_key_subj
-    #     })
-
-    #     with open(subject_pub_path, "wb") as f:
-    #         f.write(wrapped_subj.dump())
-
-    # # Export issuer private key
-    #     priv_num = self._Entity__Private_Key.private_numbers().private_value
-    #     # priv_bytes = priv_num.to_bytes(32, 'big')
-
-    #     priv_key = ECPrivateKey({
-    #         'version': 'ecPrivkeyVer1',
-    #         'private_key': priv_num,
-    #         'parameters': {'named': 'secp256r1'}
-    #     })
-
-# # Wrap it in PrivateKeyInfo
-    #     wrapped = PrivateKeyInfo({
-    #         'version': 0,
-    #         'private_key_algorithm': {
-    #             'algorithm': 'ec',
-    #             'parameters': {'named': 'secp256r1'}
-    #         },
-    #         'private_key': priv_key
-    #     })
-
-    #     with open(issuer_priv_path, "wb") as f:
-    #         f.write(wrapped.dump())
-
-    #     return subject_pub_path, issuer_priv_path, issuer_cert_path
-
-    # def generate_cert_for_vehicle(self, veh, label="LTCA", certify_bin="/home/youssef/cacio_pepe/vanetza/bin/certify"):
-    #     certs_dir = Path("certs")
-    #     certs_dir.mkdir(exist_ok=True)
-
-    # # Ensure issuer has a root cert
-    #     issuer_cert_path = certs_dir / \
-    #         f"{self.__class__.__name__}_{self.id}.cert"
-    #     if not issuer_cert_path.exists():
-    #         pub, priv, _ = self.export_keys_for_certify(self, certs_dir)
-    #         subprocess.run([
-    #             certify_bin, "generate-root",
-    #             "--subject-key", str(priv),
-    #             str(issuer_cert_path)
-    #         ], check=True)
-
-    # # Generate the cert for the VEH
-    #     cert_path = certs_dir / \
-    #         f"{veh.__class__.__name__}_{veh.id}_{label}.cert"
-    #     pub, priv, _ = self.export_keys_for_certify(veh, certs_dir)
-    #     subprocess.run([
-    #         certify_bin, "generate-aa",
-    #         "--sign-key", str(priv),
-    #         "--sign-cert", str(issuer_cert_path),
-    #         "--subject-key", str(pub),
-    #         str(cert_path)
-    #     ], check=True)
-    #     cert_bytes = b""
-
-    #     with open(cert_path, "rb") as f:
-    #         cert_bytes += f.read()
-    #     return cert_bytes
-
     def generate_own_cert(self):
+        """
+        Generate a new certificate for the Long Term Certificate Authority.
+        """
         with open("ca/root_ca.key.pem", "rb") as f:
             root_priv = serialization.load_pem_private_key(
                 f.read(), password=None)
@@ -160,13 +62,16 @@ class Long_Term_Certificate_Authority (Entity):
             issuer_cert_bytes,
             issuer_priv=root_priv,
             subject_name=f"{self.__class__.__name__}_{self.id}",
-            authority_type="authorization-authority"  # or authorization-authority
+            authority_type="authorization-authority"
         )
 
         with open(f"ca/{self.__class__.__name__}_{self.id}.cert", "wb") as f:
             f.write(cert)
 
-    def newVehicule(self, veh):
+    def newVehicule(self, veh: Entity):
+        """
+        Generate a new long-term certificate for a vehicle.
+        """
         my_cert_path = Path(f"ca/{self.__class__.__name__}_{self.id}.cert")
         issuer_cert_bytes = my_cert_path.read_bytes()
         subject_name = f"VEH_{veh.id}"
@@ -190,27 +95,17 @@ class Long_Term_Certificate_Authority (Entity):
             json.dump(data, f)
 
         return encoded
-    # id_veh = str(random.randint(0, int(5e12)))
-    # # TODO change this line after finding a cert generator
-    # # to change with a real cert_content
-    # cert = self.generate_cert_for_vehicle(veh)
-    # LT_certif = id_veh
-    # with open(self.filename, "r") as f:
-    #     data: list = json.load(f)
 
-    #     # TODO change this line after finding a cert generator
-    #     # data.append({'id': LT_certif, 'LTC': LT_certif})
-    #     data.append(
-    #         {'id': id_veh, 'LT_cert': base64.b64encode(cert).decode()})
-    # with open(self.filename, "w") as f:
-    #     json.dump(data, f)
-    # return base64.b64encode(cert).decode()
-
+    @override
     def packet_processing(self, packet: mini_packet):
         source_entity = self.get_msg_Entity_source(packet.address)
         print('LTCA received a message from ', source_entity)
+        
         if source_entity == "RA":
-            data = packet.data.decode()
+            aes_key = self.derive_aes_key_from_data(self.connected_Entities[source_entity].get_Public_Key().public_bytes(encoding=serialization.Encoding.PEM,
+                                                        format=serialization.PublicFormat.SubjectPublicKeyInfo))
+            decrypt_data = Cryptico.aes_decrypt(aes_key, packet.data)
+            data = decrypt_data.decode()
             json_data = json.loads(data)
             ID = json_data["id"]
             vehicule_pubkey = base64.b64decode(
@@ -219,7 +114,7 @@ class Long_Term_Certificate_Authority (Entity):
             LTC = base64.b64decode(json_data["CipherLTC"])
             print(LTC)
             aes_key = self.derive_aes_key_from_data(vehicule_pubkey)
-            LTC_decrypted = self.aes_decrypt(aes_key, LTC)
+            LTC_decrypted = Cryptico.aes_decrypt(aes_key, LTC)
             LTC_correct_form = base64.b64decode(LTC_decrypted)
             print("Checking ...", LTC_correct_form)
             print("-- LTC DECRYPTED --")
@@ -239,9 +134,6 @@ class Long_Term_Certificate_Authority (Entity):
 
             with open(self.filename, "r") as f:
                 file_content = json.load(f)
-                # ID = file_content['id']
-            # for record in file_content:
-            # TODO change this line after finding a cert generator to handle the comparaison
 
             found = any(r.get("subject_name") ==
                         subject_name for r in file_content)
@@ -253,25 +145,21 @@ class Long_Term_Certificate_Authority (Entity):
                 print("CERT SUBJECT NOT IN DATABASE -- UNKNOWN")
                 validity = "unknown"
 
-            # if self.verify_cert_signature(LTC_decrypted, self.get_Public_Key().public_bytes(
-            #         encoding=serialization.Encoding.PEM,
-            #         format=serialization.PublicFormat.SubjectPublicKeyInfo)):
-            #     print("✔️ Valid cert signature!")
-            #     LTC_validity = "valid"
-            # else:
-            #     print("❌ Invalid cert signature!")
-            #     return  # or handle rejection
-                # if record['id'] == LTC_decrypted:
-                #     LTC_validity = "valid"
             message = {
                 "id": ID,
                 "validity": validity
             }
             message_json = json.dumps(message)
-            self.send(self.connected_Entities['RA'], message_json.encode())
+            aes_RA_RA_key = self.derive_aes_key_from_data(
+                        self.connected_Entities["RA"].get_Public_Key().public_bytes(encoding=serialization.Encoding.PEM,
+                                                                                    format=serialization.PublicFormat.SubjectPublicKeyInfo))
+            encrypt_for_RA = Cryptico.aes_encrypt(aes_RA_RA_key, message_json.encode())
+            self.send(self.connected_Entities['RA'], encrypt_for_RA)
+
         else:  # the source is unknown
             pass
 
+    @override
     def forward_and_empty_buffer(self, buffer: list[mini_packet]):
         while True:
             if len(buffer) != 0:
@@ -279,6 +167,7 @@ class Long_Term_Certificate_Authority (Entity):
                 self.packet_processing(packet)
                 buffer.pop(0)
 
+    @override
     def start(self):
         listening_thread = threading.Thread(
             target=self.listen_and_fill_buffer, args=(self.listening_address,))

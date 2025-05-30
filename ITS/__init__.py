@@ -10,7 +10,23 @@ from .Cryptico import *
 
 
 def newVehicule(sending_address: int, listening_address: int, RA: Registration_Authority, LTCA: Long_Term_Certificate_Authority, LA1: Link_Authority, LA2: Link_Authority, PCA: Pseudonym_Certificate_Authority):
-
+    """
+    Create a new Vehicule instance and set up its authorities and certificates.
+    
+    param
+    -----
+        sending_address: The address for sending packets.
+        listening_address: The address for listening to packets.
+        RA: The Registration Authority instance.
+        LTCA: The Long Term Certificate Authority instance.
+        LA1: The first Link Authority instance.
+        LA2: The second Link Authority instance.
+        PCA: The Pseudonym Certificate Authority instance.
+    
+    return
+    ------
+        Vehicule : An instance of Vehicule with its authorities and certificates set.
+    """
     veh_sending_address = Address('localhost', sending_address)
     veh_listening_address = Address('localhost', listening_address)
 
@@ -24,8 +40,7 @@ def newVehicule(sending_address: int, listening_address: int, RA: Registration_A
     VEH.add_LA2(LA2)
     VEH.add_PCA(PCA)
 
-    VEH.set_cert(LA1.newVehicule(VEH), LA2.newVehicule(
-        VEH), LTCA.newVehicule(VEH))
+    VEH.set_cert(LA1.newVehicule(VEH), LA2.newVehicule(VEH), LTCA.newVehicule(VEH))
 
     Pkey_LTCA = LTCA.get_Public_Key().public_bytes(encoding=serialization.Encoding.PEM,
                                                    format=serialization.PublicFormat.SubjectPublicKeyInfo)
@@ -42,6 +57,9 @@ def newVehicule(sending_address: int, listening_address: int, RA: Registration_A
 
 
 def initArch(RA: Registration_Authority, LTCA: Long_Term_Certificate_Authority, LA1: Link_Authority, LA2: Link_Authority, PCA: Pseudonym_Certificate_Authority):
+    """
+        Initialize the architecture by linking all entities.
+    """
     RA.add_LA1(LA1)
     RA.add_LA2(LA2)
     RA.add_LTCA(LTCA)
@@ -61,11 +79,17 @@ def initArch(RA: Registration_Authority, LTCA: Long_Term_Certificate_Authority, 
 
 
 def revoke(PC: int, LA1: Link_Authority, PCA: Pseudonym_Certificate_Authority):
+    """
+    Revoke a pseudonym certificate by collaborating with the Link Authority and Pseudonym Certificate Authority.
+    """
     PLVS = PCA.getPLV(PC)
     linked_PLVS = LA1.getLinkedPLVs(PLVS[0])
     return PCA.getLinkedPCs(linked_PLVS)
 
 
 def starting_service(entities: list[Entity]):
+    """
+    Start all services for the given entities.
+    """
     for entity in entities:
         entity.start()
