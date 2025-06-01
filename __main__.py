@@ -2,6 +2,8 @@ from ITS import *
 import time
 from ITS.certs_util import *
 from pprint import pprint
+
+
 if __name__ == '__main__':
 
     # ---------------------------------- Address INIT ------------------------------------------------------
@@ -17,10 +19,8 @@ if __name__ == '__main__':
     PCA_listening_address = Address('localhost', 50010)
 # ------------------------------- Entities creation  ---------------------------------------------------
     RA = Registration_Authority(ra_sending_address, ra_listening_address)
-    LTCA = Long_Term_Certificate_Authority(
-        LTCA_sending_address, LTCA_listening_address)
-    PCA = Pseudonym_Certificate_Authority(
-        PCA_sending_address, PCA_listening_address)
+    LTCA = Long_Term_Certificate_Authority(LTCA_sending_address, LTCA_listening_address)
+    PCA = Pseudonym_Certificate_Authority(PCA_sending_address, PCA_listening_address)
     LA1 = Link_Authority(la1_sending_address, la1_listening_address)
     LA2 = Link_Authority(la2_sending_address, la2_listening_address)
 # -------------------------- Recognition (linking entities) --------------------------------------------
@@ -30,6 +30,7 @@ if __name__ == '__main__':
     VEH2 = newVehicule(40007, 40400, RA, LTCA, LA1, LA2, PCA)
 
 
+    
 # -------------------------------- Main Program ---------------------------------------------------------
     print("-------------__Starting programme__-------------\n")
 
@@ -42,15 +43,15 @@ if __name__ == '__main__':
 
     #  *********** Sending request *****************
     VEH.send_request()
-    # time.sleep(30)
+    time.sleep(60)
 
     print("********* new reqquest *********")
     VEH2.send_request()
+    time.sleep(60)
 
-    # time.sleep(30)
     print("********* new reqquest *********")
     VEH.send_request()
-    time.sleep(30)
+    time.sleep(60)
 
     # *********  Malicious_behaviour_simulation ***********
     with open(VEH.filename, "r") as f:
@@ -65,7 +66,7 @@ if __name__ == '__main__':
 
     pprint(pseudonym_cert)
     LV = int.from_bytes(pseudonym_cert['tbs']['ld'])
-    print(LV)
+    print(f"associated LV: {LV}")
 
     print(
-        f"\033[1;31mPCA & LA1 collaboration will revoke the following certificate: {revoke(LV, LA1, PCA)}, after a malicious behaviour stated by {PC_mali}\033[0m")
+        f"\033[1;31mPCA & LA1 collaboration will revoke the following certificate: {revoke(PC_mali, LA1, PCA)}, after a malicious behaviour started by {PC_mali}\033[0m")
